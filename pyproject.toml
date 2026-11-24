@@ -1,7 +1,7 @@
 [project]
 name = "stacking"
 version = "0.1.0"
-description = "Add your description here"
+description = "The real-space galaxy-intensity cross-correlation of DESI and SPHEREx"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -23,3 +23,7 @@ dev = [
 
 [tool.uv.sources]
 talltable = { path = "../talltable/packages/core", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.14.0"]
+build-backend = "uv_build"
