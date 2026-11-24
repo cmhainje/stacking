@@ -33,4 +33,16 @@ for CAP in NGC SGC; do
     done
 done
 
+for CAP in NGC SGC; do
+    fetch "${BASE_URL}/ELG_LOPnotqso_${CAP}_clustering.dat.fits" \
+        "${DATA_DIR}/ELG_LOPnotqso_${CAP}_clustering.dat.fits"
+done
+
+for CAP in NGC SGC; do
+    for N in 0 1; do
+        fetch "${BASE_URL}/ELG_LOPnotqso_${CAP}_${N}_clustering.ran.fits" \
+            "${DATA_DIR}/ELG_LOPnotqso_${CAP}_${N}_clustering.ran.fits"
+    done
+done
+
 echo "done."
