@@ -12,19 +12,34 @@ from talltable.paths import PIXEL_DB_PATH, WAVES_DB_PATH
 from talltable.waveid import waveid_to_rowcoldet
 
 BATCH_ROWS = 4 * 1024 * 1024
+DISC_LEVEL = 14  # healpix level used to look up discs; cells are ~13 arcsec
 
 
 @dataclass(frozen=True)
 class Pixels:
-    """SPHEREx measurements."""
+    """SPHEREx measurements, sorted by hphigh."""
 
     # fmt: off
-    vec:  NDArray  # (n, 3) unit vectors
-    wl:   NDArray  # (n,)   observed wavelength [um]
-    flux: NDArray  # (n,)   nu I_nu [nW/m^2/sr], zodi not subtracted
-    zodi: NDArray  # (n,)   nu I_nu [nW/m^2/sr]
-    var:  NDArray  # (n,)   variance of flux
+    hphigh: NDArray  # (n,)   nested healpix index at HP_HIGH_LEVEL
+    vec:    NDArray  # (n, 3) unit vectors
+    wl:     NDArray  # (n,)   observed wavelength [um]
+    flux:   NDArray  # (n,)   nu I_nu [nW/m^2/sr], zodi not subtracted
+    zodi:   NDArray  # (n,)   nu I_nu [nW/m^2/sr]
+    var:    NDArray  # (n,)   variance of flux
     # fmt: on
+
+    def __getitem__(self, idx):
+        return Pixels(
+            self.hphigh[idx],
+            self.vec[idx],
+            self.wl[idx],
+            self.flux[idx],
+            self.zodi[idx],
+            self.var[idx],
+        )
+
+    def __len__(self):
+        return len(self.hphigh)
 
 
 def waveid_to_wave_index(wid):
@@ -66,18 +81,31 @@ def read_partition(
         # cut on wavelength range before computing vec
         wl = load_wavelengths()[waveid_to_wave_index(waveid)]
         keep = (wl >= wl_min) & (wl < wl_max)
-        vec = np.stack(hp.pix2vec(2**HP_HIGH_LEVEL, hphigh[keep], nest=True), axis=-1)
-        pieces.append((vec, wl[keep], flux[keep], zodi[keep], vari[keep]))
+        hphigh = hphigh[keep]
+        vec = np.stack(hp.pix2vec(2**HP_HIGH_LEVEL, hphigh, nest=True), axis=-1)
+        pieces.append((hphigh, vec, wl[keep], flux[keep], zodi[keep], vari[keep]))
 
-    vec, wl, flux, zodi, vari = (np.concatenate(x) for x in zip(*pieces))
+    hphigh, vec, wl, flux, zodi, vari = (np.concatenate(x) for x in zip(*pieces))
 
     return Pixels(
+        hphigh,
         vec,
         wl,
         to_nuInu(flux, wl),
         to_nuInu(zodi, wl),
         to_nuInu(to_nuInu(vari, wl), wl),
     )
+
+
+def find_near(pix: Pixels, vec: NDArray, theta: float) -> NDArray:
+    """Indices of the pixels within `theta` [rad] of `vec`, plus some just outside."""
+    cells = hp.query_disc(2**DISC_LEVEL, vec, theta, inclusive=True, nest=True)
+
+    # pixels are sorted by hphigh, so those in each cell are contiguous
+    shift = 2 * (HP_HIGH_LEVEL - DISC_LEVEL)
+    beg = np.searchsorted(pix.hphigh, cells << shift)
+    end = np.searchsorted(pix.hphigh, (cells + 1) << shift)
+    return np.concatenate([np.arange(b, e) for b, e in zip(beg, end)])
 
 
 def to_nuInu(I_nu: NDArray, wl: NDArray) -> NDArray:
