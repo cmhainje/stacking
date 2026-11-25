@@ -8,9 +8,9 @@ from tqdm import tqdm
 from stacking.bins import radial_edges, redshift_edges, slice_edges
 from stacking.catalog import partitions_near
 from stacking.config import load_config
-from stacking.mask import fetch_bright, fetch_stars
+from stacking.mask import fetch_bright, fetch_tile, find_tiles
 
-IRSA_JOBS = 3  # queries to run at once; IRSA starts dropping connections by 8
+S3_JOBS = 8  # tiles to fetch at once
 
 
 def parse_args() -> Namespace:
@@ -21,7 +21,9 @@ def parse_args() -> Namespace:
 
 
 def main(config: Path, out_dir: Path) -> None:
-    """List the partitions that make_tables needs to run, and cache their stars."""
+    """List the partitions that make_tables needs to run, and cache their stars.
+
+    If fetching fails, run again; finished tiles are kept."""
     cfg = load_config(config)
     r_max = slice_edges(radial_edges(), *cfg.r_range)[-1]
     z_edges = slice_edges(redshift_edges(), *cfg.z_range)
@@ -32,13 +34,12 @@ def main(config: Path, out_dir: Path) -> None:
     (out_dir / "parts.txt").write_text("".join(f"{p}\n" for p in parts))
     print(f"{len(data)} galaxies, {len(rand)} randoms, {len(parts)} partitions")
 
-    fetch_bright()  # so the threads don't all fetch it
-    with ThreadPoolExecutor(IRSA_JOBS) as pool:
-        jobs = {pool.submit(fetch_stars, p, cfg.G_max): p for p in parts}
-        done = tqdm(as_completed(jobs), total=len(jobs), desc="fetching stars")
-        failed = [jobs[job] for job in done if job.exception()]
-    if failed:
-        raise RuntimeError(f"couldn't fetch stars for {failed}; re-run to try again")
+    fetch_bright()
+    tiles = sorted(set().union(*(find_tiles(p) for p in parts)))
+    with ThreadPoolExecutor(S3_JOBS) as pool:
+        jobs = [pool.submit(fetch_tile, *t, cfg.G_max) for t in tiles]
+        for job in tqdm(as_completed(jobs), total=len(jobs), desc="fetching stars"):
+            job.result()
 
 
 if __name__ == "__main__":
