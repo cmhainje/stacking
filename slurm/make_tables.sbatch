@@ -6,6 +6,8 @@
 #SBATCH --cpus-per-task 2
 #SBATCH --mem 0
 #SBATCH -t 12:00:00
+#SBATCH --mail-type=all
+#SBATCH --mail-user=ch4407@nyu.edu
 #SBATCH -o /mnt/sdceph/users/%u/stacking/logs/%x-%j.out
 
 # 24 tasks per node because each node's ceph-fuse daemon saturates around there (see
