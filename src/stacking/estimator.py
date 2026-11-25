@@ -19,6 +19,17 @@ class Sums:
     N: NDArray  # number of measurements
     # fmt: on
 
+    def __getitem__(self, idx):
+        return Sums(self.S[idx], self.Z[idx], self.V[idx], self.N[idx])
+
+    def __add__(self, other):
+        return Sums(
+            self.S + other.S,
+            self.Z + other.Z,
+            self.V + other.V,
+            self.N + other.N,
+        )
+
 
 def sum_around(cat: Catalog, pix: Pixels, r_edges: NDArray, wl_edges: NDArray) -> Sums:
     """Bin pixels around each object."""
