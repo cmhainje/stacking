@@ -53,13 +53,18 @@ def load_catalog(paths: list[Path]) -> Catalog:
     return Catalog(id, vec, z, cosmology.D_M(z), weight)
 
 
+def in_partition(cat: Catalog, part: int) -> NDArray:
+    """Whether each object lives inside `part`. Every object is in exactly one."""
+    lvl, idx = part_to_level_index(int(part))
+    return hp.vec2pix(2**lvl, *cat.vec.T, nest=True) == idx
+
+
 def select_near(cat: Catalog, part: int, r_max: float) -> Catalog:
     """Keep objects whose disc touches `part` (and maybe some extras)."""
     lvl, idx = part_to_level_index(int(part))
 
     # objects that live inside the partition
-    ipix = hp.vec2pix(2**lvl, *cat.vec.T, nest=True)
-    inside = ipix == idx
+    inside = in_partition(cat, part)
 
     # objects that live outside, but within r_max of the partition
     bounds = hp.boundaries(2**lvl, idx, step=8, nest=True).T  # (N_bound, 3)
