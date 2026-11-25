@@ -1,3 +1,4 @@
 data/
+.connect/
 .python-version
 **/__pycache__/
