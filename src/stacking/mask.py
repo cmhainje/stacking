@@ -9,7 +9,7 @@ import numpy as np
 import pyvo
 from astropy.table import Table
 from numpy.typing import NDArray
-from pyvo.dal import DALServiceError
+from pyvo.dal import DALQueryError, DALServiceError
 from talltable.partition import part_to_level_index
 
 from .paths import GAIA_DIR
@@ -94,7 +94,7 @@ def run_tap(query: str, max_tries: int = 5) -> Table:
     for i in range(max_tries):
         try:
             return service.run_async(query, maxrec=50_000_000).to_table()
-        except DALServiceError:
+        except (DALServiceError, DALQueryError):  # IRSA's dropped connections are either
             if i == max_tries - 1:
                 raise
             time.sleep(2**i + np.random.uniform(0, 1))
