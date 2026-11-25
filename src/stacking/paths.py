@@ -3,7 +3,9 @@ from pathlib import Path
 
 DESI_CATALOGS = "dr1/iron/v1.5"  # what download_data.sh fetches; goes in provenance
 
-DESI_DIR = Path(os.environ.get("STACKING_DESI_DIR", Path(__file__).parents[2] / "data"))
+DATA = Path(__file__).parents[2] / "data"
+DESI_DIR = Path(os.environ.get("STACKING_DESI_DIR", DATA))
+GAIA_DIR = Path(os.environ.get("STACKING_GAIA_DIR", DATA / "gaia_cache"))
 
 
 def data_paths(tracer: str, caps: list[str]) -> list[Path]:
