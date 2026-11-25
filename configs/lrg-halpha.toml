@@ -1,0 +1,11 @@
+# LRGs at 0.9 < z < 1.0, in a window around H-alpha (observed 1.11-1.47 um)
+tracer = "LRG"
+caps = ["NGC", "SGC"]
+rand_files = [0, 1]
+z_range = [0.9, 1.0]
+r_range = [0.0, 3.0]        # comoving Mpc; the 1-halo term is inside ~1-2
+wl_range = [0.586, 0.734]   # rest-frame um
+reject_flags = 0x7FD7FFFF   # everything except OUTLIER (bit 19) and SOURCE (bit 21)
+G_max = 20.0
+rand_per_data = 5
+seed = 0

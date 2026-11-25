@@ -5,7 +5,8 @@ import healpy as hp
 import numpy as np
 from astropy.io import fits
 from numpy.typing import NDArray
-from talltable.partition import part_to_level_index
+from talltable.constants import PART_MAX_LEVEL
+from talltable.partition import find_partitions_ipix, part_to_level_index
 
 from . import cosmology
 
@@ -77,3 +78,13 @@ def select_near(cat: Catalog, part: int, r_max: float) -> Catalog:
     touches = np.any(dots > cos_theta[:, None], axis=1)
 
     return cat[inside | touches]
+
+
+def partitions_near(cat: Catalog, r_max: float) -> set[int]:
+    """Partitions that any object's disc touches (and maybe some extras)."""
+    cells = set()
+    for vec, theta in zip(cat.vec, r_max / cat.D_M):
+        disc = hp.query_disc(2**PART_MAX_LEVEL, vec, theta, inclusive=True, nest=True)
+        cells.update(disc.tolist())
+    parts = find_partitions_ipix(np.array(list(cells)), PART_MAX_LEVEL)
+    return set(int(p) for p in parts)
