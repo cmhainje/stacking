@@ -7,7 +7,9 @@ class Config:
     """Everything that changes the numbers in the tables."""
 
     # fmt: off
-    tracer: str                     # e.g. "LRG"
+    tracer: str                     # DESI file prefix, e.g. "LRG", "ELG_LOPnotqso"
+    caps: list[str]                 # e.g. ["NGC", "SGC"]
+    rand_files: list[int]           # which numbered random files to use
     z_range: tuple[float, float]    # whole random slices
     r_range: tuple[float, float]    # comoving Mpc
     wl_range: tuple[float, float]   # rest-frame um
@@ -24,5 +26,5 @@ def load_config(path: Path) -> Config:
 
 
 def provenance(cfg: Config) -> dict[str, str]:
-    """Config, git commit, talltable version."""
+    """Config, git commit (as "git_commit"), talltable version, DESI catalog version."""
     raise NotImplementedError
